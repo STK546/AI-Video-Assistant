@@ -4,7 +4,18 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
-import os 
+import time
+
+def safe_invoke(chain, input_data, retries=8):
+    for i in range(retries):
+        try:
+            return chain.invoke(input_data)
+        except Exception as e:
+            if "429" in str(e) or "rate limit" in str(e).lower():
+                time.sleep(5 * (i + 1))
+            else:
+                raise e
+    raise Exception("Max retries exceeded for API due to rate limiting.")
 
 def get_llm():
     return ChatMistralAI(model = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.3, max_retries=5)
@@ -14,7 +25,6 @@ def split_transcript(transcript: str) -> list:
         chunk_size = 3000,
         chunk_overlap = 200
     )
-
     return splitter.split_text(transcript)
 
 def summarize(transcript : str) -> str:
@@ -31,11 +41,10 @@ def summarize(transcript : str) -> str:
 
     chunks = split_transcript(transcript)
 
-    import time
     chunk_summaries = []
     for chunk in chunks:
-        chunk_summaries.append(map_chain.invoke({"text" : chunk}))
-        time.sleep(1.5)
+        chunk_summaries.append(safe_invoke(map_chain, {"text" : chunk}))
+        time.sleep(2)
 
     combined = "\n\n".join(chunk_summaries)
 
@@ -54,12 +63,10 @@ def summarize(transcript : str) -> str:
         RunnablePassthrough() | RunnableLambda(lambda x:{"text":x}) | combined_prompt | llm | StrOutputParser()
     )
 
-    return combined_chain.invoke(combined)
+    return safe_invoke(combined_chain, combined)
 
 def generate_title(transcipt : str) -> str:
     llm = get_llm()
-
-    
 
     title_chain = (
         RunnablePassthrough() | RunnableLambda(lambda x:{"text":x}) | 
@@ -75,7 +82,7 @@ def generate_title(transcipt : str) -> str:
         |StrOutputParser()
     )
 
-    return title_chain.invoke(transcipt[:2000])
+    return safe_invoke(title_chain, transcipt[:2000])
 
 
 

@@ -4,13 +4,21 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-import os 
+import time
 
+def safe_invoke(chain, input_data, retries=8):
+    for i in range(retries):
+        try:
+            return chain.invoke(input_data)
+        except Exception as e:
+            if "429" in str(e) or "rate limit" in str(e).lower():
+                time.sleep(5 * (i + 1))
+            else:
+                raise e
+    raise Exception("Max retries exceeded for API due to rate limiting.")
 
 def get_llm():
     return ChatMistralAI(model = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.2, max_retries=5)
-
-
 
 def build_chain(system_prompt : str):
     llm = get_llm()
@@ -31,7 +39,7 @@ def extract_action_items(transcript:str)->str:
         "Format as a numbered list. If none found say 'No action items found.'"
     )
 
-    return chain.invoke(transcript)
+    return safe_invoke(chain, transcript)
 
 
 def extract_key_decisions(transcript: str) -> str:
@@ -40,7 +48,7 @@ def extract_key_decisions(transcript: str) -> str:
         "extract all key decisions made. Format as a numbered list. "
         "If none found say 'No key decisions found.'"
     )
-    return chain.invoke(transcript)
+    return safe_invoke(chain, transcript)
 
 
 def extract_questions(transcript: str) -> str:
@@ -49,4 +57,4 @@ def extract_questions(transcript: str) -> str:
         "or topics needing follow-up. Format as a numbered list. "
         "If none found say 'No open questions found.'"
     )
-    return chain.invoke(transcript)
+    return safe_invoke(chain, transcript)
