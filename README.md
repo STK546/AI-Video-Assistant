@@ -74,7 +74,7 @@ Transform YouTube videos or local meeting recordings into automated titles, exec
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/pushp2566/AI-Video-Assistant.git
+   git clone https://github.com/STK546/AI-Video-Assistant.git
    cd AI-Video-Assistant
    ```
 
