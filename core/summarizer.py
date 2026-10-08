@@ -7,8 +7,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 import os 
 
 def get_llm():
-    return ChatMistralAI(model = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.3)
-
+    return ChatMistralAI(model = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.3, max_retries=5)
 
 def split_transcript(transcript: str) -> list:
     splitter = RecursiveCharacterTextSplitter(
@@ -32,7 +31,11 @@ def summarize(transcript : str) -> str:
 
     chunks = split_transcript(transcript)
 
-    chunk_summaries = [map_chain.invoke({"text" : chunk}) for chunk in chunks]
+    import time
+    chunk_summaries = []
+    for chunk in chunks:
+        chunk_summaries.append(map_chain.invoke({"text" : chunk}))
+        time.sleep(1.5)
 
     combined = "\n\n".join(chunk_summaries)
 

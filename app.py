@@ -424,7 +424,9 @@ if run_btn:
 
             update_step("extract", "active")
             action_items  = mods["extract_action_items"](transcript)
+            time.sleep(1.5)
             decisions     = mods["extract_key_decisions"](transcript)
+            time.sleep(1.5)
             questions     = mods["extract_questions"](transcript)
             update_step("extract", "done")
 
