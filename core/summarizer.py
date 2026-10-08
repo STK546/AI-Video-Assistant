@@ -4,6 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
+import os
 import time
 
 def safe_invoke(chain, input_data, retries=8):
